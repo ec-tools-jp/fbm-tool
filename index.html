@@ -35,7 +35,16 @@
       padding: 24px 36px 20px;
     }
     .app-logo { font-size: 11px; color: #888; letter-spacing: 0.08em; margin-bottom: 4px; }
-    .app-title { font-size: 20px; font-weight: 700; }
+    .app-title { font-size: 20px; font-weight: 700; margin-bottom: 10px; }
+    .security-badge {
+      display: inline-block;
+      font-size: 11px;
+      color: #6ee7b7;
+      background: rgba(255,255,255,0.07);
+      border: 1px solid rgba(110,231,183,0.3);
+      border-radius: 20px;
+      padding: 3px 10px;
+    }
 
     .tabs {
       display: flex;
@@ -265,6 +274,10 @@
   <div class="app-header">
     <div class="app-logo">Amazon FBM 出荷自動化 ／ 無料ツール</div>
     <div class="app-title">FBM出荷自動化ツール</div>
+    <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:10px;">
+      <div class="security-badge">🔒 データはブラウザ内のみで処理。外部サーバーへの送信はありません。</div>
+      <a href="./manual.html" target="_blank" style="font-size:13px;font-weight:700;color:#fff;background:#e77a1a;border-radius:8px;padding:5px 14px;text-decoration:none;letter-spacing:0.03em;">📖 使い方マニュアル</a>
+    </div>
   </div>
 
   <div class="tabs">
@@ -350,7 +363,7 @@
     <div class="section-label">出力先</div>
     <div class="info-box">
       フォルダ名: <strong>FBM出荷通知_YYYYMMDD</strong><br>
-      ファイル名: <strong>{プレフィックス}amazon_shipment_confirm_YYYYMMDD.txt</strong><br>
+      ファイル名: <strong>{店舗名}_amazon_shipment_confirm_YYYYMMDD.txt</strong><br>
       同日2本目以降: <strong>…_2.txt、…_3.txt</strong>（自動採番）
     </div>
     <div class="section-label" style="margin-top:14px;">ご注意</div>
@@ -368,6 +381,7 @@
       ｜
       <a href="https://docs.google.com/forms/d/e/1FAIpQLSdeymUyCmegcPe6v2r4eOmVLpl-8I2j2rjXoO_uYbWxo1DYMQ/viewform" target="_blank">お問い合わせフォーム</a>
     </div>
+    <div style="font-size:11px;color:#bbb;margin-bottom:10px;">© 2026 ec-tools-jp / <a href="https://github.com/ec-tools-jp/fbm-tool/blob/main/LICENSE" target="_blank" style="color:#bbb;">MIT License</a></div>
     <details>
       <summary>免責事項</summary>
       <div class="disclaimer-text">
@@ -476,6 +490,13 @@ function parseCsvLine(line) {
   }
   result.push(cur);
   return result;
+}
+
+// ============================================================
+// Utilities
+// ============================================================
+function toSafeFilename(name) {
+  return name.replace(/[\/\\:*?"<>|]/g, '_').trim();
 }
 
 // ============================================================
@@ -588,7 +609,7 @@ function convertToShipmentNotify(csvText) {
   const results = [];
   for (const [storeKey, dataRows] of storeRows) {
     const store = storeMap[storeKey] || null;
-    const prefix = store ? store.prefix : '';
+    const prefix = toSafeFilename(storeKey) + '_';
     results.push({ store, storeKey, dataRows, shipDateStr, prefix });
   }
   return results;
@@ -626,25 +647,21 @@ function addStoreCard(store) {
       <button class="btn-delete-store" type="button">削除</button>
     </div>
     <div class="store-card-grid">
-      <div class="field">
+      <div class="field full">
         <label>店舗名（依頼主名）</label>
-        <input type="text" data-field="name" value="${esc(s.name)}" placeholder="例：まいど萬福堂">
-      </div>
-      <div class="field">
-        <label>プレフィックス</label>
-        <input type="text" data-field="prefix" value="${esc(s.prefix)}" placeholder="例：Mampuku_">
+        <input type="text" data-field="name" value="${esc(s.name)}" placeholder="例：〇〇ショップ">
       </div>
       <div class="field">
         <label>電話番号（ハイフンなし）</label>
-        <input type="text" data-field="tel" value="${esc(s.tel)}" placeholder="例：05017255760">
+        <input type="text" data-field="tel" value="${esc(s.tel)}" placeholder="例：0312345678">
       </div>
       <div class="field">
         <label>郵便番号（ハイフンなし）</label>
-        <input type="text" data-field="postal" value="${esc(s.postal)}" placeholder="例：9896162">
+        <input type="text" data-field="postal" value="${esc(s.postal)}" placeholder="例：1000001">
       </div>
       <div class="field full">
         <label>住所</label>
-        <input type="text" data-field="address" value="${esc(s.address)}" placeholder="例：宮城県大崎市古川駅前大通3-1-20">
+        <input type="text" data-field="address" value="${esc(s.address)}" placeholder="例：東京都千代田区千代田1-1">
       </div>
       <div class="field full">
         <label>会社名・建物名</label>
@@ -652,7 +669,7 @@ function addStoreCard(store) {
       </div>
       <div class="field">
         <label>請求先顧客コード</label>
-        <input type="text" data-field="customerCode" value="${esc(s.customerCode)}" placeholder="例：022922002599">
+        <input type="text" data-field="customerCode" value="${esc(s.customerCode)}" placeholder="例：0123456789012">
       </div>
       <div class="field">
         <label>運賃管理番号</label>
@@ -693,7 +710,6 @@ document.getElementById('save-settings-btn').addEventListener('click', () => {
     if (!name) { hasError = true; return; }
     stores.push({
       name,
-      prefix:       get('prefix').trim(),
       tel:          get('tel').trim(),
       postal:       get('postal').trim(),
       address:      get('address').trim(),
