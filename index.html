@@ -611,7 +611,8 @@ function convertToShipmentNotify(csvText) {
     throw new Error('このファイルは「発行済みデータ」CSVではありません。\nB2クラウドでラベル発行後にエクスポートした\nyyyymmddHHMMSS_発行済テ_ータ.csv を使用してください。');
   }
 
-  const storeRows = new Map();
+  // storeKey -> Map(orderId -> dataRow)  ※同一order-idは伝票番号をカンマ結合
+  const storeOrderMaps = new Map();
   let shipDateStr = '';
 
   for (let i = 1; i < lines.length; i++) {
@@ -632,21 +633,29 @@ function convertToShipmentNotify(csvText) {
       || storeNames.find(k => storeName.includes(k) || k.includes(storeName))
       || storeName;
 
-    if (!storeRows.has(storeKey)) storeRows.set(storeKey, []);
+    if (!storeOrderMaps.has(storeKey)) storeOrderMaps.set(storeKey, new Map());
+    const orderMap = storeOrderMaps.get(storeKey);
 
     const shipMethod = SHIP_METHOD_MAP[invoiceType] || '宅急便';
-    const data = Array(19).fill('');
-    data[0]=orderId; data[3]=isoDate; data[4]='YAMATO';
-    data[6]=tracking; data[7]=shipMethod;
-    storeRows.get(storeKey).push(data);
+
+    if (orderMap.has(orderId)) {
+      // 分割出荷：同一order-idに別の伝票番号 → カンマ結合
+      orderMap.get(orderId)[6] += ',' + tracking;
+    } else {
+      const data = Array(19).fill('');
+      data[0]=orderId; data[3]=isoDate; data[4]='YAMATO';
+      data[6]=tracking; data[7]=shipMethod;
+      orderMap.set(orderId, data);
+    }
   }
 
-  if (storeRows.size === 0) throw new Error('有効なデータ行が見つかりません');
+  if (storeOrderMaps.size === 0) throw new Error('有効なデータ行が見つかりません');
 
   const results = [];
-  for (const [storeKey, dataRows] of storeRows) {
+  for (const [storeKey, orderMap] of storeOrderMaps) {
     const store = storeMap[storeKey] || null;
     const prefix = toSafeFilename(storeKey) + '_';
+    const dataRows = Array.from(orderMap.values());
     results.push({ store, storeKey, dataRows, shipDateStr, prefix });
   }
   return results;
