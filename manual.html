@@ -169,8 +169,9 @@
     <!-- 動作環境 -->
     <h2>動作環境</h2>
     <div class="warning">
-      ⚠️ <strong>Chrome または Edge が必要です。</strong> Safari・Firefox では動作しません。<br>
-      このツールは変換したファイルをパソコンのフォルダに直接保存します。この保存方法がChromeとEdgeにしか対応していないためです。
+      ⚠️ <strong>ファイルの保存方法がブラウザによって異なります。</strong><br>
+      PC版 Chrome / Edge：保存先フォルダを選択して直接保存できます。<br>
+      iPhone / Android / Safari / Firefox：ダウンロードフォルダに自動保存されます。
     </div>
     <div class="info-box">
       🔒 このツールはすべての処理をブラウザ内で完結します。入力したデータが外部のサーバーに送信されることはありません。
@@ -215,13 +216,13 @@
     </div>
     <div class="step-box">
       <div class="step-num">3</div>
-      <p>「変換して保存」を押すと<strong>保存先フォルダを選ぶ画面</strong>が開きます。ファイルではなくフォルダを選択してください。選んだフォルダの中に自動でサブフォルダとCSVファイルが作成されます。</p>
+      <p>「変換して保存」を押します。PC版Chrome / Edgeでは<strong>保存先フォルダを選ぶ画面</strong>が開き、選んだフォルダの中に自動でサブフォルダとCSVファイルが作成されます。iPhone / Safari / Firefoxではダウンロードフォルダに直接保存されます。</p>
     </div>
 
     <h3>出力ファイル</h3>
     <table>
       <tr><th>項目</th><th>内容</th></tr>
-      <tr><td>フォルダ名</td><td>B2クラウド_YYYYMMDD</td></tr>
+      <tr><td>フォルダ名</td><td>B2クラウド_YYYYMMDD（PC版のみ自動作成）</td></tr>
       <tr><td>ファイル名</td><td>b2cloud_YYYYMMDD.csv（全店舗統合・1ファイル）</td></tr>
       <tr><td>形式</td><td>Shift-JIS、CSV、95列</td></tr>
     </table>
@@ -249,7 +250,7 @@
     </div>
     <div class="step-box">
       <div class="step-num">3</div>
-      <p>「変換して保存」を押すと<strong>保存先フォルダを選ぶ画面</strong>が開きます。ファイルではなくフォルダを選択してください。選んだフォルダの中に自動でサブフォルダとファイルが作成されます。店舗は依頼主名から自動識別され、店舗ごとのファイルが生成されます。</p>
+      <p>「変換して保存」を押します。PC版Chrome / Edgeでは<strong>保存先フォルダを選ぶ画面</strong>が開き、選んだフォルダの中に自動でサブフォルダとファイルが作成されます。iPhone / Safari / Firefoxではダウンロードフォルダに直接保存されます。店舗は依頼主名から自動識別され、店舗ごとのファイルが生成されます。</p>
     </div>
     <div class="step-box">
       <div class="step-num">4</div>
@@ -259,9 +260,9 @@
     <h3>出力ファイル</h3>
     <table>
       <tr><th>項目</th><th>内容</th></tr>
-      <tr><td>フォルダ名</td><td>FBM出荷通知_YYYYMMDD</td></tr>
+      <tr><td>フォルダ名</td><td>FBM出荷通知_YYYYMMDD（PC版のみ自動作成）</td></tr>
       <tr><td>ファイル名</td><td>{店舗名}_amazon_shipment_confirm_YYYYMMDD.txt</td></tr>
-      <tr><td>同日2本目以降</td><td>…_2.txt、…_3.txt（自動採番）</td></tr>
+      <tr><td>同日2本目以降</td><td>…_2.txt、…_3.txt（自動採番、PC版のみ）</td></tr>
       <tr><td>形式</td><td>Shift-JIS、タブ区切り</td></tr>
     </table>
 
@@ -273,9 +274,9 @@
       問題ありません。出荷元住所に関する警告ですが、出荷通知は正常に処理されています。
     </div>
 
-    <h3>Safariで使えない</h3>
+    <h3>iPhoneやSafariで使えますか？</h3>
     <div class="faq-answer">
-      このツールは変換したファイルをパソコンのフォルダに直接保存します。この保存方法がChromeとEdgeにしか対応していないためです。Chrome または Edge をご使用ください。
+      変換処理は問題なく動作します。ただし、PC版Chrome / Edgeのような「保存先フォルダの選択」はできません。変換後のファイルはダウンロードフォルダに自動保存されます。
     </div>
 
     <h3>請求先顧客コード・運賃管理番号とは何ですか？</h3>
