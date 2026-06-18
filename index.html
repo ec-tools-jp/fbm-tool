@@ -36,8 +36,7 @@
       padding: 24px 36px 20px;
     }
     .app-logo { font-size: 11px; color: #888; letter-spacing: 0.08em; margin-bottom: 4px; }
-    .app-title { font-size: 20px; font-weight: 700; margin-bottom: 4px; }
-    .app-version { font-size: 11px; color: #666; margin-bottom: 10px; }
+    .app-title { font-size: 20px; font-weight: 700; margin-bottom: 10px; }
     .security-badge {
       display: inline-block;
       font-size: 11px;
@@ -299,8 +298,7 @@
   <div class="app-header">
     <div class="app-logo">Amazon FBM 出荷自動化 ／ 無料ツール</div>
     <div class="app-title">FBM出荷自動化ツール</div>
-    <div class="app-version">v1.1.0</div>
-    <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+    <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:10px;">
       <div class="security-badge">🔒 データはブラウザ内のみで処理。外部サーバーへの送信はありません。</div>
       <a href="./manual.html" target="_blank" style="font-size:13px;font-weight:700;color:#fff;background:#e77a1a;border-radius:8px;padding:5px 14px;text-decoration:none;letter-spacing:0.03em;">📖 使い方マニュアル</a>
     </div>
@@ -541,19 +539,6 @@ function toSafeFilename(name) {
 }
 
 // ============================================================
-// File download fallback (for browsers without showDirectoryPicker)
-// ============================================================
-function downloadFile(uint8, filename) {
-  const blob = new Blob([uint8], { type: 'application/octet-stream' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url; a.download = filename;
-  document.body.appendChild(a); a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
-}
-
-// ============================================================
 // Conversion logic
 // ============================================================
 function buildAddress(state, city, addr1, addr2, addr3) {
@@ -599,7 +584,7 @@ function convertToB2(tsvText, shipDate, invoiceType, store) {
     if (!g.orderId) continue;
     const row = new Array(95).fill('');
     row[0]=g.orderId; row[1]=invoiceType; row[4]=shipDate;
-    row[8]=g.phone; row[10]=g.postal; row[11]=g.fullAddress; row[12]=g.building;
+    row[8]=g.phone.replace(/-/g,''); row[10]=g.postal.replace(/-/g,''); row[11]=g.fullAddress; row[12]=g.building;
     row[15]=g.recipientName; row[19]=store.tel; row[21]=store.postal;
     row[22]=store.address; row[23]=store.building; row[24]=store.name;
     row[27]=(g.products[0]||'').slice(0,25).trimEnd();
@@ -907,30 +892,21 @@ s1Convert.addEventListener('click', async () => {
   const csvText = [toCsvLine(B2_HEADER), ...allRows.map(toCsvLine)].join('\r\n') + '\r\n';
   const filename = `b2cloud_${dateStr}.csv`;
 
-  // ---- 保存処理（フォールバック対応） ----
-  if (typeof window.showDirectoryPicker === 'function') {
-    try {
-      const rootDir = await window.showDirectoryPicker({ mode: 'readwrite' });
-      const subDir  = await rootDir.getDirectoryHandle(folderName, { create: true });
-      const fh = await subDir.getFileHandle(filename, { create: true });
-      const wr = await fh.createWritable(); await wr.write(toSjisUint8(csvText)); await wr.close();
-      const ok = document.createElement('div');
-      ok.className = 'result-item success'; ok.style.marginTop = '6px';
-      ok.textContent = `✓ ${folderName}/${filename}（${totalCount}件）を保存しました`;
-      s1Results.appendChild(ok);
-    } catch(e) {
-      if (e.name !== 'AbortError') {
-        const err = document.createElement('div');
-        err.className = 'result-item error'; err.style.marginTop = '6px';
-        err.textContent = `⚠ 保存失敗：${e.message}`; s1Results.appendChild(err);
-      }
-    }
-  } else {
-    downloadFile(toSjisUint8(csvText), filename);
+  try {
+    const rootDir = await window.showDirectoryPicker({ mode: 'readwrite' });
+    const subDir  = await rootDir.getDirectoryHandle(folderName, { create: true });
+    const fh = await subDir.getFileHandle(filename, { create: true });
+    const wr = await fh.createWritable(); await wr.write(toSjisUint8(csvText)); await wr.close();
     const ok = document.createElement('div');
     ok.className = 'result-item success'; ok.style.marginTop = '6px';
-    ok.textContent = `✓ ${filename}（${totalCount}件）をダウンロードしました`;
+    ok.textContent = `✓ ${folderName}/${filename}（${totalCount}件）を保存しました`;
     s1Results.appendChild(ok);
+  } catch(e) {
+    if (e.name !== 'AbortError') {
+      const err = document.createElement('div');
+      err.className = 'result-item error'; err.style.marginTop = '6px';
+      err.textContent = `⚠ 保存失敗：${e.message}`; s1Results.appendChild(err);
+    }
   }
 });
 
@@ -999,46 +975,35 @@ s2Convert.addEventListener('click', async () => {
 
   if (!outputFiles.length) return;
 
-  // ---- 保存処理（フォールバック対応） ----
-  if (typeof window.showDirectoryPicker === 'function') {
-    try {
-      const rootDir = await window.showDirectoryPicker({ mode: 'readwrite' });
-      for (const { shipDateStr, baseFilename, data } of outputFiles) {
-        const folderName = `FBM出荷通知_${shipDateStr}`;
-        let subDir;
-        if (foldersByDate.has(folderName)) {
-          subDir = foldersByDate.get(folderName);
-        } else {
-          subDir = await rootDir.getDirectoryHandle(folderName, { create: true });
-          foldersByDate.set(folderName, subDir);
-        }
-        let filename = `${baseFilename}.txt`; let n = 2;
-        while (true) {
-          try { await subDir.getFileHandle(filename, { create: false }); filename=`${baseFilename}_${n}.txt`; n++; }
-          catch { break; }
-        }
-        const fh = await subDir.getFileHandle(filename, { create: true });
-        const wr = await fh.createWritable(); await wr.write(data); await wr.close();
+  try {
+    const rootDir = await window.showDirectoryPicker({ mode: 'readwrite' });
+    for (const { shipDateStr, baseFilename, data } of outputFiles) {
+      const folderName = `FBM出荷通知_${shipDateStr}`;
+      let subDir;
+      if (foldersByDate.has(folderName)) {
+        subDir = foldersByDate.get(folderName);
+      } else {
+        subDir = await rootDir.getDirectoryHandle(folderName, { create: true });
+        foldersByDate.set(folderName, subDir);
       }
-      const ok = document.createElement('div');
-      ok.className = 'result-item success'; ok.style.marginTop = '6px';
-      ok.textContent = `✓ ${outputFiles.length}ファイルを保存しました`;
-      s2Results.appendChild(ok);
-    } catch(e) {
-      if (e.name !== 'AbortError') {
-        const err = document.createElement('div');
-        err.className = 'result-item error'; err.style.marginTop = '6px';
-        err.textContent = `⚠ 保存失敗：${e.message}`; s2Results.appendChild(err);
+      let filename = `${baseFilename}.txt`; let n = 2;
+      while (true) {
+        try { await subDir.getFileHandle(filename, { create: false }); filename=`${baseFilename}_${n}.txt`; n++; }
+        catch { break; }
       }
-    }
-  } else {
-    for (const { baseFilename, data } of outputFiles) {
-      downloadFile(data, `${baseFilename}.txt`);
+      const fh = await subDir.getFileHandle(filename, { create: true });
+      const wr = await fh.createWritable(); await wr.write(data); await wr.close();
     }
     const ok = document.createElement('div');
     ok.className = 'result-item success'; ok.style.marginTop = '6px';
-    ok.textContent = `✓ ${outputFiles.length}ファイルをダウンロードしました`;
+    ok.textContent = `✓ ${outputFiles.length}ファイルを保存しました`;
     s2Results.appendChild(ok);
+  } catch(e) {
+    if (e.name !== 'AbortError') {
+      const err = document.createElement('div');
+      err.className = 'result-item error'; err.style.marginTop = '6px';
+      err.textContent = `⚠ 保存失敗：${e.message}`; s2Results.appendChild(err);
+    }
   }
 });
 
