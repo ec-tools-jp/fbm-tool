@@ -502,8 +502,13 @@ const NOTIFY_HEADER = [
 // ============================================================
 function decodeBuffer(buffer) {
   const uint8 = new Uint8Array(buffer);
-  const detected = Encoding.detect(uint8) || 'SJIS';
-  const codes = Encoding.convert(uint8, { to: 'UNICODE', from: detected, type: 'array' });
+  const detected = Encoding.detect(uint8);
+  // UTF系と明示的に判定できた場合のみUTF系で読む。
+  // それ以外（SJIS/ASCII/falsy）はCP932を包含するSJIS固定。
+  // Encoding.detect()はCP932内の特殊文字（異字体等）を誤ってUTF8と判定することがあるため。
+  const from = (detected === 'UTF8' || detected === 'UTF16' || detected === 'UTF16BE' || detected === 'UTF16LE')
+    ? detected : 'SJIS';
+  const codes = Encoding.convert(uint8, { to: 'UNICODE', from, type: 'array' });
   return Encoding.codeToString(codes).replace(/\r\n/g, '\n').replace(/\r/g, '\n');
 }
 function toSjisUint8(text) {
@@ -584,7 +589,7 @@ function convertToB2(tsvText, shipDate, invoiceType, store) {
     if (!g.orderId) continue;
     const row = new Array(95).fill('');
     row[0]=g.orderId; row[1]=invoiceType; row[4]=shipDate;
-    row[8]=g.phone.replace(/-/g,''); row[10]=g.postal.replace(/-/g,''); row[11]=g.fullAddress; row[12]=g.building;
+    row[8]=g.phone; row[10]=g.postal; row[11]=g.fullAddress; row[12]=g.building;
     row[15]=g.recipientName; row[19]=store.tel; row[21]=store.postal;
     row[22]=store.address; row[23]=store.building; row[24]=store.name;
     row[27]=(g.products[0]||'').slice(0,25).trimEnd();
